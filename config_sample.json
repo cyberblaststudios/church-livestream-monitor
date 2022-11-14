@@ -1,0 +1,10 @@
+{
+    "log_level": "DEBUG",
+    "monitors" : {
+        "facebook_1":{
+            "type": "facebook",
+            "page_id": "<facebook page id>",
+            "interval": 60
+        }
+    }
+}
