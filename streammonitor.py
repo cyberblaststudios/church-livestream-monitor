@@ -64,8 +64,8 @@ class StreamMonitor:
                     messagebox.showwarning(f"{message.thread_name} is down")
 
             except KeyboardInterrupt:
-                        print("stopping monitor....")
-                        return
+                print("stopping monitor....")
+                return
 
 def main():
 
