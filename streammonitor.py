@@ -9,8 +9,9 @@ from time import sleep
 from tkinter import messagebox
 import tkinter
 from monitors.facebook_monitor import facebookMonitor
+import os
 
-LOG_FILE_NAME = "streammonitor.log"
+LOG_FILE_NAME = 'logs/streammonitor.log'
 
 class StreamMonitor:
 
@@ -43,29 +44,28 @@ class StreamMonitor:
                 self.thread_list.append(facebook_worker_inst.monitor_thread)
         
         while True:
-            message = None
             try:
-                message = self.queue.get_nowait()
-            except Empty as e:
-                pass
-            
-            # handle message
-            if message != None and message.message == "stream-down":
-                # calling withdraw to prevent a blank tk dialog box from showing
-                tkinter.Tk().withdraw()
-
-                # dialoge box as a warning that the stream is down
-                messagebox.showwarning(f"{message.thread_name} is down")
-
-    def start(self):
-        monitor_manager_thread = Thread(target=self.start_workers, name="monitor_manager_thread", daemon=True)
-        monitor_manager_thread.start()
-
-        try:
-            while monitor_manager_thread.is_alive:
+                # give us enough sleep time to catch SIGKILL
                 sleep(.1)
-        except KeyboardInterrupt:
-            print("stopping monitor....")
+
+                message = None
+                try:
+                    message = self.queue.get_nowait()
+                except Empty as e:
+                    # handle queue exceptions
+                    pass
+
+                # handle message
+                if message != None and message.message == "stream-down":
+                    # calling withdraw to prevent a blank tk dialog box from showing
+                    tkinter.Tk().withdraw()
+
+                    # dialoge box as a warning that the stream is down
+                    messagebox.showwarning(f"{message.thread_name} is down")
+
+            except KeyboardInterrupt:
+                        print("stopping monitor....")
+                        return
 
 def main():
 
@@ -75,6 +75,18 @@ def main():
     # create the thread message queue
     message_queue = Queue(100)
 
+    # get the parent directories that need to be created from LOG_FILE_NAME
+    split_logging_path = os.path.split(LOG_FILE_NAME)
+
+    # make sure that the logs directory is created
+    if split_logging_path != None and split_logging_path[0] != '':
+        try:
+            # create the directories that the log file needs to be in before we create the log file
+            os.makedirs(split_logging_path[0], exist_ok=True)
+        except Exception as e:
+            print("failed to create log file directory, perhaps the process does not have permission")
+            sys.exit(1)
+
     # setup basic logging parameters
     logging.basicConfig(filename=LOG_FILE_NAME, 
         format="%(asctime)s %(levelname)s %(threadName)s %(message)s", level="DEBUG", filemode="a")
@@ -83,7 +95,7 @@ def main():
     applogger = logging.getLogger()
 
     # configure log rotations
-    applogger.addHandler(RotatingFileHandler(filename=LOG_FILE_NAME, maxBytes=100000000, backupCount=4))
+    applogger.addHandler(RotatingFileHandler(filename=LOG_FILE_NAME, maxBytes=20000000, backupCount=4))
 
     # also emit logs to stdout
     applogger.addHandler(logging.StreamHandler(sys.stdout))
@@ -103,7 +115,7 @@ def main():
     stream_montitor_app = StreamMonitor(config, applogger, message_queue)
 
     # build the monitor workers - blocking call
-    stream_montitor_app.start()
+    stream_montitor_app.start_workers()
     
 
 if __name__ == "__main__":
