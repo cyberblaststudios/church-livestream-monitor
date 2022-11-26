@@ -1,10 +1,15 @@
 {
-    "log_level": "DEBUG",
+    "log_level": "INFO",
     "monitors" : {
         "facebook_1":{
             "type": "facebook",
-            "page_id": "<facebook page id>",
-            "interval": 60
+            "page_id": "<page_id>",
+            "interval": 5,
+            "timezone": "US/Central",
+            "monitor_times": [
+                {"startTime": "08:55:00", "endTime": "10:20:00"},
+                {"startTime": "10:55:00", "endTime": "11:45:00"}
+            ]
         }
     }
 }
